@@ -1,0 +1,47 @@
+Sub CreateTableOfContents()
+    Dim ws As Worksheet
+    Dim toc As Worksheet
+    Dim LastRow As Long
+    Dim i As Long
+    
+    ' Create a new worksheet for the table of contents
+    Set ws = ThisWorkbook.Sheets.Add(Before:=ThisWorkbook.Sheets(1))
+    ws.name = "Table of Contents"
+    Set toc = ws
+    
+    ' Set header properties
+    With toc.Range("A1:B1")
+        .Merge
+        .Value = "Table of Contents"
+        .Font.Bold = True
+        .HorizontalAlignment = xlCenter
+        .Interior.Color = RGB(255, 255, 204) ' Light yellow
+    End With
+    
+    ' Set column headers
+    toc.Range("A2").Value = "Sr. No."
+    toc.Range("B2").Value = "Worksheet Name"
+    
+    ' Get the last used row in the workbook
+    LastRow = ThisWorkbook.Sheets.Count
+    
+    ' Populate the table of contents with worksheet names and hyperlinks
+    For i = 3 To LastRow + 1
+        toc.Hyperlinks.Add Anchor:=toc.Range("B" & i), Address:="", SubAddress:= _
+            "'" & ThisWorkbook.Sheets(i - 2).name & "'!A1", TextToDisplay:=ThisWorkbook.Sheets(i - 2).name
+        toc.Range("A" & i).Value = i - 2
+    Next i
+    
+    ' Apply borders to the entire table
+    With toc.UsedRange
+        .Borders.LineStyle = xlContinuous
+        .Borders.Weight = xlThin
+    End With
+    
+    ' Autofit the columns
+    toc.Columns("A:B").AutoFit
+    
+    ' Scroll to the top of the table of contents
+    toc.Range("A1").Select
+End Sub
+
