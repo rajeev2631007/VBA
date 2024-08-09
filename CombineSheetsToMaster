@@ -1,0 +1,59 @@
+Sub CombineSheetsToMaster()
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim MasterSheet As Worksheet
+    Dim LastRow As Long
+    Dim LastColumn As Long
+    Dim DestLastColumn As Long
+
+    Set wb = ThisWorkbook
+    MasterSheetName = "Master"
+    Set MasterSheet = wb.Sheets(MasterSheetName)
+
+    For Each ws In wb.Worksheets
+        If ws.Name <> MasterSheetName Then
+            LastRow = ws.Cells(Rows.Count, 1).End(xlUp).Row
+            LastColumn = ws.Cells(1, Columns.Count).End(xlToLeft).Column
+            Set CopyRange = ws.Range(ws.Cells(2, 1), ws.Cells(LastRow, LastColumn))
+
+            NextRow = MasterSheet.Cells(Rows.Count, 1).End(xlUp).Row + 1
+
+            ' Use direct value transfer for efficiency
+            MasterSheet.Cells(NextRow, 1).Resize(CopyRange.Rows.Count, CopyRange.Columns.Count).Value = CopyRange.Value
+        End If
+    Next ws
+End Sub
+----------------------------------------------------------------------------------------------------------
+Absolutely! Here's a detailed explanation of the Sub CombineSheetsToMaster() code with explanations of the code flow:
+
+1. Variable Declarations:
+
+    Dim wb As Workbook
+
+    : Declares a variable named wb of type Workbook. This variable will hold a reference to the current workbook where the code is running.
+    Dim ws As Worksheet: Declares a variable named ws of type Worksheet. This will be used within a loop to iterate through each worksheet in the workbook.
+    Dim MasterSheet As Worksheet: Declares a variable named MasterSheet of type Worksheet. This will hold a reference to the specific sheet you want to combine all the data into (the "master" sheet).
+    Dim LastRow As Long: Declares a variable named LastRow of type Long (integer). This will be used to store the last row with data in the current sheet being processed within the loop.
+    Dim LastColumn As Long: Declares a variable named LastColumn of type Long. This will be used to store the last column with data in the current sheet being processed within the loop.
+    Dim DestLastColumn As Long: Declares a variable named DestLastColumn of type Long. This will be used to store the last column with data in the master sheet (useful for some scenarios).
+
+2. Setting Up:
+
+    Set wb = ThisWorkbook: Assigns the current workbook to the wb variable.
+    MasterSheetName = "Master": Defines the name of the master sheet as "Master" (change this if your master sheet has a different name).
+    Set MasterSheet = wb.Sheets(MasterSheetName): Uses the workbook (wb) and sheet name (MasterSheetName) to find the master sheet and assigns it to the MasterSheet variable.
+
+3. Looping Through Sheets:
+
+    For Each ws In wb.Worksheets: Starts a loop that iterates through each worksheet (ws) in the current workbook (wb).
+        If ws.Name <> MasterSheetName Then: This condition checks if the current sheet being processed (ws) is not the master sheet. This ensures the code doesn't copy data from the master sheet to itself.
+            Finding Last Row and Column in Source Sheet:
+                LastRow = ws.Cells(Rows.Count, 1).End(xlUp).Row: This line finds the last row with data in the current sheet (ws). It starts at the bottom row (Rows.Count) and goes up (End(xlUp)) until it finds a non-empty cell in column 1. It then stores the row number in the LastRow variable.
+                LastColumn = ws.Cells(1, Columns.Count).End(xlToLeft).Column: This line finds the last column with data in the current sheet. It starts at the rightmost column (Columns.Count) and goes left (End(xlToLeft)) until it finds a non-empty cell in row 1. It then stores the column number in the LastColumn variable.
+            Defining Copy Range (Excluding Headers):
+                Set CopyRange = ws.Range(ws.Cells(2, 1), ws.Cells(LastRow, LastColumn)): This line defines the range of data to be copied from the current sheet. It starts at cell (2, 1) (second row, first column) which excludes the header row, and goes down to LastRow and across to LastColumn based on the values previously determined.
+            Finding Next Empty Row in Master Sheet:
+                NextRow = MasterSheet.Cells(Rows.Count, 1).End(xlUp).Row + 1: This line finds the next empty row in the master sheet. It starts at the bottom row (Rows.Count) and goes up (End(xlUp)) until it finds a non-empty cell in column 1. It then adds 1 to the row number and stores it in the NextRow variable.
+            Direct Value Transfer:
+                MasterSheet.Cells(NextRow, 1).Resize(CopyRange.Rows.Count, CopyRange.Columns.Count).Value = CopyRange.Value: This is the core data transfer line. It uses several methods:
+                    MasterSheet.Cells(NextRow, 1).Resize(CopyRange.Rows.Count, CopyRange.Columns.Count): This part defines the destination range in the master sheet. It starts at (NextRow, 1) (the first empty row in the master sheet) and resizes it based on the number of rows and columns in the CopyRange
