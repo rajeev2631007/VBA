@@ -1,0 +1,84 @@
+VBA Script: Extract Day, Month, and Year into Separate Columns
+
+This script will:
+✅ Extract Day, Month, and Year from Column C (Joining Date).
+✅ Place the extracted values in Columns D, E, and F (Modify as needed).
+✅ Ensure all values are treated as real dates before extracting.
+✅ Work on a dynamic range so it adapts to your dataset.
+
+Sub ExtractDayMonthYear()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim rng As Range, cell As Range
+    Dim dt As Date
+
+    ' Set the active worksheet
+    Set ws = ActiveSheet
+
+    ' Find last row in Column C (Assuming Dates are in Column C)
+    lastRow = ws.Cells(Rows.Count, 3).End(xlUp).Row
+
+    ' Define the range containing dates
+    Set rng = ws.Range("C2:C" & lastRow) ' Modify if needed
+    
+    ' Insert headers for extracted data
+    ws.Cells(1, 4).Value = "Day"
+    ws.Cells(1, 5).Value = "Month"
+    ws.Cells(1, 6).Value = "Year"
+
+    ' Loop through each cell in the date column
+    For Each cell In rng
+        If Not IsEmpty(cell.Value) Then
+            ' Check if value is a valid date
+            If IsDate(cell.Value) Then
+                dt = CDate(cell.Value) ' Convert to date
+                
+                ' Extract and place values in respective columns
+                cell.Offset(0, 1).Value = Day(dt)   ' Extract Day
+                cell.Offset(0, 2).Value = Month(dt) ' Extract Month
+                cell.Offset(0, 3).Value = Year(dt)  ' Extract Year
+            Else
+                ' Mark invalid date entries
+                cell.Offset(0, 1).Value = "Invalid Date"
+                cell.Offset(0, 1).Interior.Color = RGB(255, 0, 0) ' Highlight in Red
+            End If
+        End If
+    Next cell
+
+    ' Autofit Columns for better visibility
+    ws.Columns("D:F").AutoFit
+
+    ' Notify user
+    MsgBox "Day, Month, and Year extracted successfully!", vbInformation, "Success"
+End Sub
+
+
+How This Script Works
+
+1️⃣ Loops through Column C (Modify as needed).
+2️⃣ Checks if the value is a real date before extracting.
+3️⃣ Extracts:
+
+    Day → Column D
+    Month → Column E
+    Year → Column F
+    4️⃣ Marks invalid dates in Red and writes "Invalid Date".
+    5️⃣ Autofits columns for better readability.
+
+ Sample Test Data (Before Running VBA)
+Name	Salary	Joining Date
+John Doe	50000	01/02/2023 ✅
+Mary Jane	60000	12-15-2022 ❌
+Jack Smith	70000	10-Mar-2021 ✅
+Alice Brown	80000	2022/05/07 ✅
+Raj Gupta	75000	15-Aug-2020 ✅
+Suman Roy	65000	03/14/2019 ❌
+
+ Expected Output (After Running VBA)
+Name	Salary	Joining Date	Day	Month	Year
+John Doe	50000	01/02/2023 ✅	1	2	2023
+Mary Jane	60000	12-15-2022 ❌	🔴 Invalid Date		
+Jack Smith	70000	10-Mar-2021 ✅	10	3	2021
+Alice Brown	80000	07-May-2022 ✅	7	5	2022
+Raj Gupta	75000	15-Aug-2020 ✅	15	8	2020
+Suman Roy	65000	03/14/2019 ❌	🔴 Invalid Date		
