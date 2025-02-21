@@ -1,0 +1,100 @@
+ Enhanced VBA Script: Extract Day, Month, Year, and Weekday with Month Names (Improvement)
+
+This enhanced script will:
+✅ Extract Day, Month, and Year into separate columns (Columns D, E, F).
+✅ Convert Month numbers (1, 2, 3...) into Month Names (Jan, Feb, Mar...) in Column G.
+✅ Extract Weekday Names (Monday, Tuesday...) in Column H.
+✅ Handle dates stored as text and convert them to real Excel dates where possible.
+✅ Highlight invalid dates in Red and label them as "Invalid Date".
+
+Sub ExtractDayMonthYearWeekday()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim rng As Range, cell As Range
+    Dim dt As Variant
+    Dim correctDate As Date
+    Dim issueFound As Boolean
+
+    ' Set the active worksheet
+    Set ws = ActiveSheet
+
+    ' Find last row in Column C (Assuming Dates are in Column C)
+    lastRow = ws.Cells(Rows.Count, 3).End(xlUp).Row
+
+    ' Define the range containing dates
+    Set rng = ws.Range("C2:C" & lastRow) ' Modify if needed
+    
+    ' Insert headers for extracted data
+    ws.Cells(1, 4).Value = "Day"
+    ws.Cells(1, 5).Value = "Month"
+    ws.Cells(1, 6).Value = "Year"
+    ws.Cells(1, 7).Value = "Month Name"
+    ws.Cells(1, 8).Value = "Weekday"
+    
+    ' Loop through each cell in the date column
+    issueFound = False
+    For Each cell In rng
+        If Not IsEmpty(cell.Value) Then
+            dt = cell.Value  ' Store original value
+            
+            ' Check if the cell contains a valid date
+            If IsDate(dt) Then
+                ' Convert to date and store in correctDate variable
+                correctDate = CDate(dt)
+                
+                ' Extract and place values in respective columns
+                cell.Offset(0, 1).Value = Day(correctDate)     ' Extract Day
+                cell.Offset(0, 2).Value = Month(correctDate)   ' Extract Month (Numeric)
+                cell.Offset(0, 3).Value = Year(correctDate)    ' Extract Year
+                cell.Offset(0, 4).Value = MonthName(Month(correctDate)) ' Extract Month Name (e.g., Jan, Feb)
+                cell.Offset(0, 5).Value = Format(correctDate, "dddd") ' Extract Weekday (e.g., Monday)
+                
+            Else
+                ' Log invalid date entries and highlight in Red
+                cell.Offset(0, 1).Value = "Invalid Date"
+                cell.Offset(0, 1).Interior.Color = RGB(255, 0, 0) ' Highlight in Red
+                
+                issueFound = True
+            End If
+        End If
+    Next cell
+
+    ' Autofit Columns for better visibility
+    ws.Columns("D:H").AutoFit
+
+    ' Notify user
+    If issueFound Then
+        MsgBox "Day, Month, Year, Month Name, and Weekday extracted successfully! Invalid dates highlighted.", vbExclamation, "Warning"
+    Else
+        MsgBox "All data formatted successfully!", vbInformation, "Success"
+    End If
+End Sub
+
+How This Script Works
+
+1️⃣ Extracts Day, Month, and Year from Column C.
+2️⃣ Converts Month number (1, 2, 3...) to the Month Name (e.g., Jan, Feb, Mar).
+3️⃣ Extracts Weekday Name (e.g., Monday, Tuesday).
+4️⃣ If the value is not a valid date, it marks the cell as "Invalid Date" and highlights it in Red.
+5️⃣ Autofits the columns for better presentation.
+
+Sample Test Data (Before Running VBA)
+Name	Salary	Joining Date
+John Doe	50000	01/02/2023
+Mary Jane	60000	12-15-2022
+Jack Smith	70000	10-Mar-2021
+Alice Brown	80000	07-May-2022
+Raj Gupta	75000	15-Aug-2020
+Suman Roy	65000	03/14/2019
+Invalid Date	40000	abcdefg
+
+Expected Output (After Running VBA)
+Name	Salary	Joining Date	Day	Month	Year	Month Name	Weekday
+John Doe	50000	01/02/2023	1	2	2023	February	Wednesday
+Mary Jane	60000	12-15-2022	15	12	2022	December	Thursday
+Jack Smith	70000	10-Mar-2021	10	3	2021	March	Thursday
+Alice Brown	80000	07-May-2022	7	5	2022	May	Saturday
+Raj Gupta	75000	15-Aug-2020	15	8	2020	August	Friday
+Suman Roy	65000	03/14/2019	14	3	2019	March	Thursday
+Invalid Date	40000	abcdefg	🔴 Invalid Date				
+
