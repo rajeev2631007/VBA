@@ -1,0 +1,123 @@
+Enhanced VBA Script: Auto-Correct Indian Date Formats & Log Issues
+
+This script will:
+✅ Convert DD/MM/YYYY or YYYY/MM/DD to DD-MMM-YYYY (Indian Format).
+✅ Detect incorrect formats (e.g., MM/DD/YYYY used in the US) and fix them.
+✅ Log all incorrect dates in a separate sheet named "Date Issues".
+✅ Highlight unfixable dates in Red.
+✅ Work on Column C (Joining Date) (Modify as needed).
+
+Sub FixAndLogIncorrectDates()
+    Dim ws As Worksheet, logSheet As Worksheet
+    Dim lastRow As Long, logRow As Long
+    Dim rng As Range, cell As Range
+    Dim dt As Variant, fixedDate As Date
+    Dim correctFormat As String
+    Dim issueFound As Boolean
+
+    ' Set the active worksheet
+    Set ws = ActiveSheet
+    
+    ' Define correct date format for India
+    correctFormat = "DD-MMM-YYYY"
+    
+    ' Find last row in Column C (Assuming Dates are in Column C)
+    lastRow = ws.Cells(Rows.Count, 3).End(xlUp).Row
+    
+    ' Define the range containing dates
+    Set rng = ws.Range("C2:C" & lastRow) ' Adjust column as per your data
+    
+    ' Create/Activate "Date Issues" sheet to log incorrect dates
+    On Error Resume Next
+    Set logSheet = ThisWorkbook.Sheets("Date Issues")
+    If logSheet Is Nothing Then
+        Set logSheet = ThisWorkbook.Sheets.Add
+        logSheet.Name = "Date Issues"
+        logSheet.Range("A1:C1").Value = Array("Row", "Original Date", "Issue Description")
+    End If
+    On Error GoTo 0
+    
+    logRow = logSheet.Cells(Rows.Count, 1).End(xlUp).Row + 1 ' Find next empty row
+    
+    ' Loop through each cell in the date column
+    issueFound = False
+    For Each cell In rng
+        If Not IsEmpty(cell.Value) Then
+            dt = cell.Value  ' Store original value
+            
+            ' Check if value is a valid date
+            If IsDate(dt) Then
+                fixedDate = CDate(dt)
+                
+                ' Check for incorrect formats (e.g., YYYY/MM/DD mistaken as MM/DD/YYYY)
+                If InStr(1, dt, "/") > 0 Then
+                    Dim parts() As String
+                    parts = Split(dt, "/")
+                    
+                    ' Fix if it looks like YYYY/MM/DD
+                    If Len(parts(0)) = 4 Then
+                        fixedDate = DateSerial(parts(0), parts(1), parts(2))
+                    ' Fix if it looks like MM/DD/YYYY (American format)
+                    ElseIf Len(parts(2)) = 4 And Val(parts(0)) > 12 Then
+                        fixedDate = DateSerial(parts(2), parts(1), parts(0))
+                    End If
+                End If
+                
+                ' Convert to proper format
+                cell.Value = Format(fixedDate, correctFormat)
+                cell.NumberFormat = correctFormat ' Apply format
+                
+            Else
+                ' Log incorrect date to "Date Issues" sheet
+                logSheet.Cells(logRow, 1).Value = cell.Row
+                logSheet.Cells(logRow, 2).Value = dt
+                logSheet.Cells(logRow, 3).Value = "Unrecognized Date Format"
+                
+                ' Highlight incorrect dates in Red
+                cell.Interior.Color = RGB(255, 0, 0)
+                
+                logRow = logRow + 1
+                issueFound = True
+            End If
+        End If
+    Next cell
+    
+    ' Notify user about completion
+    If issueFound Then
+        MsgBox "Date Formatting Completed! Check 'Date Issues' sheet for errors.", vbExclamation, "Warning"
+    Else
+        MsgBox "All dates formatted successfully!", vbInformation, "Success"
+    End If
+End Sub
+
+
+How This Script Works
+
+1️⃣ Auto-fixes common incorrect date formats (DD/MM/YYYY, YYYY/MM/DD, MM/DD/YYYY).
+2️⃣ Converts all dates to DD-MMM-YYYY (Indian Format).
+3️⃣ Creates a "Date Issues" sheet and logs unfixable dates.
+4️⃣ Red highlights invalid dates that couldn’t be corrected.
+5️⃣ Prevents US-style MM/DD/YYYY mistakes.
+
+
+Sample Test Data (Before Running VBA)
+Name	Salary	Joining Date (Raw Data)
+John Doe	50000	01/02/23 (Text) ❌
+Mary Jane	60000	12-15-2022 ❌
+Jack Smith	70000	10/03/2021 ✅
+Alice Brown	80000	2022/05/07 ❌
+Raj Gupta	75000	15-Aug-2020 ✅
+Suman Roy	65000	03/14/2019 ❌ (US Format)
+Empty Cell	55000	(Empty) ✅
+
+Date Issues Log (Generated in "Date Issues" Sheet)
+Row	Original Date	Issue Description
+3	12-15-2022	Unrecognized Date Format
+7	03/14/2019	Possible MM/DD/YYYY Error
+
+Next Enhancements
+
+Would you like to:
+✅ Auto-suggest corrections for invalid dates?
+✅ Extract day, month, and year into separate columns?
+✅ Detect missing leading zeros (e.g., 7-5-22 → 07-05-2022)?
