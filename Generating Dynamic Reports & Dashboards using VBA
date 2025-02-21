@@ -112,3 +112,196 @@ You can expand the dashboard with additional functionality:
 By automating reports with VBA, you create dynamic, real-time reports and dashboards that can be updated by a simple click. This approach saves significant time and effort for recurring reporting tasks.
 
 Let me know if you want to enhance or expand on this further, such as adding more filters or improving the design of the dashboard! 🚀
+
+
+Enhanced VBA Script with Additional Functionalities
+
+To further enhance the dynamic report and dashboard, I'll add the requested functionalities. This updated version of the code will:
+
+    Dynamic Date Filtering: Allow the user to select a Start Date and End Date to filter the data.
+    Interactive Slicers: Add Slicers for Region, Year, and Sales Rep to make the report more interactive.
+    Conditional Formatting: Apply conditional formatting to highlight high sales (green), low sales (red), and trends.
+    Multiple Charts: Generate an additional Pie Chart for Sales Distribution by Region and a Line Chart for Sales Trend over Time.
+    Emailing Report: Email the generated report as a PDF attachment to stakeholders.
+
+
+Sub GenerateEnhancedReport()
+    Dim ws As Worksheet
+    Dim pivotSheet As Worksheet
+    Dim lastRow As Long
+    Dim yearFilter As String, regionFilter As String, startDate As Date, endDate As Date
+    Dim pivotTable As PivotTable
+    Dim pivotRange As Range
+    Dim chart As ChartObject
+    Dim pieChart As ChartObject
+    Dim lineChart As ChartObject
+    Dim emailAddress As String
+    Dim pdfPath As String
+
+    ' Set the active worksheet (data sheet)
+    Set ws = ActiveSheet
+
+    ' Get last row of data in Column A (Order ID column)
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+
+    ' User input for Year, Region filters and Date Range
+    yearFilter = InputBox("Enter the Year (e.g., 2024):", "Year Filter")
+    regionFilter = InputBox("Enter the Region (e.g., North, East, etc.):", "Region Filter")
+    startDate = InputBox("Enter the Start Date (mm/dd/yyyy):", "Start Date Filter")
+    endDate = InputBox("Enter the End Date (mm/dd/yyyy):", "End Date Filter")
+
+    ' Validate date range input
+    If Not IsDate(startDate) Or Not IsDate(endDate) Then
+        MsgBox "Invalid Date Range! Please enter correct dates.", vbCritical, "Error"
+        Exit Sub
+    End If
+
+    ' Add a new worksheet for Pivot Table and Chart
+    Set pivotSheet = ThisWorkbook.Sheets.Add
+    pivotSheet.Name = "EnhancedReport"
+
+    ' Define the data range for Pivot Table (Assuming data starts from row 2)
+    Set pivotRange = ws.Range("A1:E" & lastRow)
+
+    ' Create Pivot Table
+    Set pivotTable = pivotSheet.PivotTableWizard(SourceType:=xlDatabase, SourceData:=pivotRange)
+    
+    ' Add Pivot Fields
+    pivotTable.AddFields RowFields:="Sales Rep", ColumnFields:="Region", DataFields:="Sales Amount"
+    
+    ' Apply filters based on user input
+    pivotSheet.PivotTables(1).PivotFields("Year").CurrentPage = yearFilter
+    pivotSheet.PivotTables(1).PivotFields("Region").CurrentPage = regionFilter
+    
+    ' Filter by Date Range
+    pivotSheet.PivotTables(1).PivotFields("Date").PivotFilters.Add Type:=xlDateBetween, Value1:=startDate, Value2:=endDate
+
+    ' Create and format the first Chart (Column Chart for Sales)
+    Set chart = pivotSheet.ChartObjects.Add(Left:=100, Width:=500, Top:=200, Height:=300)
+    chart.Chart.SetSourceData pivotSheet.PivotTables(1).TableRange1
+    chart.Chart.ChartType = xlColumnClustered
+    chart.Chart.HasTitle = True
+    chart.Chart.ChartTitle.Text = "Sales Report: " & yearFilter & " - " & regionFilter
+
+    ' Create the second chart (Pie Chart for Sales Distribution by Region)
+    Set pieChart = pivotSheet.ChartObjects.Add(Left:=650, Width:=400, Top:=200, Height:=300)
+    pieChart.Chart.SetSourceData pivotSheet.PivotTables(1).TableRange1
+    pieChart.Chart.ChartType = xlPie
+    pieChart.Chart.HasTitle = True
+    pieChart.Chart.ChartTitle.Text = "Sales Distribution by Region"
+
+    ' Create the third chart (Line Chart for Sales Trend over Time)
+    Set lineChart = pivotSheet.ChartObjects.Add(Left:=100, Width:=500, Top:=550, Height:=300)
+    lineChart.Chart.SetSourceData pivotSheet.PivotTables(1).TableRange1
+    lineChart.Chart.ChartType = xlLine
+    lineChart.Chart.HasTitle = True
+    lineChart.Chart.ChartTitle.Text = "Sales Trend over Time"
+
+    ' Apply Conditional Formatting to Sales Amount column
+    With pivotSheet.Cells(2, 5).Resize(lastRow - 1)
+        .FormatConditions.Add Type:=xlCellValue, Operator:=xlGreater, Formula1:="=5000"
+        .FormatConditions(1).Interior.Color = RGB(0, 255, 0) ' Green for high sales
+        .FormatConditions.Add Type:=xlCellValue, Operator:=xlLess, Formula1:="=1000"
+        .FormatConditions(2).Interior.Color = RGB(255, 0, 0) ' Red for low sales
+    End With
+
+    ' Add Slicers for Region, Year, and Sales Rep
+    pivotSheet.Shapes.AddSlicer SlicerCache:=pivotSheet.PivotTables(1).PivotFields("Region"), Left:=50, Top:=50, Width:=150, Height:=150
+    pivotSheet.Shapes.AddSlicer SlicerCache:=pivotSheet.PivotTables(1).PivotFields("Year"), Left:=50, Top:=250, Width:=150, Height:=150
+    pivotSheet.Shapes.AddSlicer SlicerCache:=pivotSheet.PivotTables(1).PivotFields("Sales Rep"), Left:=50, Top:=450, Width:=150, Height:=150
+
+    ' Export report as PDF and email it to stakeholders
+    pdfPath = Application.GetSaveAsFilename(FileFilter:="PDF Files (*.pdf), *.pdf", Title:="Save PDF Report")
+    
+    ' Check if the user selected a path
+    If pdfPath <> "False" Then
+        ' Export as PDF
+        pivotSheet.ExportAsFixedFormat Type:=xlTypePDF, Filename:=pdfPath
+        
+        ' Email Address input
+        emailAddress = InputBox("Enter the email address to send the report:", "Email Address")
+
+        ' Send Email with PDF attachment (using Outlook)
+        If emailAddress <> "" Then
+            Call SendEmailWithAttachment(pdfPath, emailAddress)
+            MsgBox "Report successfully emailed to " & emailAddress, vbInformation, "Success"
+        Else
+            MsgBox "Email not sent. Please provide a valid email address.", vbExclamation, "Error"
+        End If
+    Else
+        MsgBox "Report was not saved as PDF.", vbExclamation, "Error"
+    End If
+
+    ' Autofit columns for better visibility
+    pivotSheet.Columns.AutoFit
+
+    ' Notify user
+    MsgBox "Enhanced Dynamic Report and Dashboard created successfully for " & yearFilter & " and " & regionFilter & "!", vbInformation, "Success"
+End Sub
+
+Sub SendEmailWithAttachment(ByVal pdfPath As String, ByVal emailAddress As String)
+    Dim OutlookApp As Object
+    Dim OutlookMail As Object
+
+    ' Create Outlook object
+    Set OutlookApp = CreateObject("Outlook.Application")
+    Set OutlookMail = OutlookApp.CreateItem(0)
+
+    ' Send email with attachment
+    With OutlookMail
+        .To = emailAddress
+        .Subject = "Sales Report"
+        .Body = "Dear Stakeholder," & vbCrLf & vbCrLf & "Please find the attached sales report."
+        .Attachments.Add pdfPath
+        .Send
+    End With
+
+    ' Clean up
+    Set OutlookMail = Nothing
+    Set OutlookApp = Nothing
+End Sub
+
+
+Key Features of the Enhanced Script
+
+    Dynamic Date Filtering:
+        The user is prompted to input a Start Date and End Date, and the data is filtered accordingly using xlDateBetween filter.
+
+    Interactive Slicers:
+        Slicers are added for Region, Year, and Sales Rep to provide an interactive interface for users to filter data dynamically within the Pivot Table.
+
+    Conditional Formatting:
+        High sales are highlighted in green, and low sales in red to easily identify trends and performance.
+
+    Multiple Charts:
+        Column Chart for Sales Amount.
+        Pie Chart for Sales Distribution by Region.
+        Line Chart for Sales Trend over Time.
+
+    Emailing Report:
+        The generated report is saved as a PDF file and can be emailed directly to stakeholders using Outlook.
+        File Save Prompt to allow the user to select a location for the PDF.
+
+📌 Output Example
+
+When the script is run:
+
+    A new worksheet "EnhancedReport" is created with:
+        A Pivot Table with sales data for the selected Region and Year.
+        Multiple charts (Column, Pie, and Line) displaying the relevant sales information.
+        Conditional Formatting highlights key performance data.
+        Slicers are added to filter data interactively.
+        The report is saved as a PDF and emailed to the recipient.
+
+
+Next Steps:
+
+You can further improve this report by:
+
+    Customizing the email content and including more personalized information.
+    Adding more Pivot Table fields or charts based on additional data dimensions.
+    Automating report generation on a schedule using Excel's Task Scheduler or macros.
+
+Let me know if you'd like to explore these options or add any more functionality! 🚀
+
+
