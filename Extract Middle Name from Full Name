@@ -1,0 +1,183 @@
+ Summary of What This Code Does
+
+✅ Extract the Middle Name from a Full Name column dynamically.
+✅ Removes extra spaces & special characters before processing.
+✅ Handles names correctly, even if they contain apostrophes, hyphens, or multiple spaces.
+✅ Allows the user to select columns dynamically (instead of hardcoding A & B).
+✅ Provides error handling for invalid column selections or empty inputs.
+✅ Creates a Summary Report to show how many names had middle names or not.
+
+
+Sub ExtractMiddleName_Advanced()
+    ' ============================================
+    ' VBA Script: Extract Middle Name from Full Name
+    ' Purpose: Extracts the middle name dynamically,
+    '          handles errors, trims spaces, and generates a summary report.
+    ' ============================================
+    
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim fullName As String
+    Dim nameParts() As String
+    Dim middleName As String
+    Dim i As Integer, j As Integer
+    Dim inputCol As String, outputCol As String
+    Dim inputColNum As Integer, outputColNum As Integer
+    Dim inputRange As Range, cell As Range
+    Dim totalNames As Integer, namesWithMiddle As Integer, namesWithoutMiddle As Integer
+    
+    ' Set the active worksheet
+    Set ws = ActiveSheet
+    
+    ' Prompt user for input column (Full Name)
+    inputCol = InputBox("Enter the column letter where Full Names are stored (e.g., A):", "Select Input Column")
+    If inputCol = "" Or Not IsLetter(inputCol) Then
+        MsgBox "Invalid column input. Please enter a valid letter (A-Z).", vbCritical, "Error"
+        Exit Sub
+    End If
+    inputColNum = Range(inputCol & "1").Column ' Convert column letter to column number
+
+    ' Prompt user for output column (Middle Name)
+    outputCol = InputBox("Enter the column letter where Middle Names should be stored (e.g., B):", "Select Output Column")
+    If outputCol = "" Or Not IsLetter(outputCol) Then
+        MsgBox "Invalid column input. Please enter a valid letter (A-Z).", vbCritical, "Error"
+        Exit Sub
+    End If
+    outputColNum = Range(outputCol & "1").Column ' Convert column letter to column number
+
+    ' Allow user to select the range dynamically
+    On Error Resume Next
+    Set inputRange = Application.InputBox("Select the range containing Full Names:", Type:=8)
+    On Error GoTo 0
+    
+    ' Validate user selection
+    If inputRange Is Nothing Then
+        MsgBox "No range selected. Please select a valid range.", vbCritical, "Error"
+        Exit Sub
+    End If
+    
+    ' Initialize counters
+    totalNames = 0
+    namesWithMiddle = 0
+    namesWithoutMiddle = 0
+
+    ' Loop through each cell in the selected range
+    For Each cell In inputRange
+        fullName = Trim(cell.Value) ' Read and trim spaces
+        
+        ' Skip empty cells
+        If fullName = "" Then GoTo NextCell
+        
+        ' Increment total names processed
+        totalNames = totalNames + 1
+        
+        ' Replace multiple spaces with a single space
+        Do While InStr(fullName, "  ") > 0
+            fullName = Replace(fullName, "  ", " ")
+        Loop
+        
+        ' Remove any special characters (e.g., non-printable characters)
+        fullName = WorksheetFunction.Clean(fullName)
+        fullName = Application.WorksheetFunction.Trim(fullName)
+        
+        ' Split the name into an array
+        nameParts = Split(fullName, " ")
+        
+        ' Check how many parts the name has
+        If UBound(nameParts) = 0 Then
+            middleName = "No Middle Name" ' Only one name, no middle name
+            namesWithoutMiddle = namesWithoutMiddle + 1
+        ElseIf UBound(nameParts) = 1 Then
+            middleName = "No Middle Name" ' First and Last Name only
+            namesWithoutMiddle = namesWithoutMiddle + 1
+        Else
+            middleName = "" ' Reset middle name
+            
+            ' Extract all middle name parts (ignoring first and last name)
+            For j = 1 To UBound(nameParts) - 1
+                middleName = middleName & nameParts(j) & " "
+            Next j
+            
+            middleName = Trim(middleName) ' Remove extra trailing space
+            namesWithMiddle = namesWithMiddle + 1
+        End If
+        
+        ' Write the extracted middle name to the output column
+        ws.Cells(cell.Row, outputColNum).Value = middleName
+
+NextCell:
+    Next cell
+
+    ' Generate a summary report
+    GenerateReport totalNames, namesWithMiddle, namesWithoutMiddle
+
+    ' Notify user that the process is complete
+    MsgBox "Middle names extracted successfully! A summary report has been created.", vbInformation, "Task Complete"
+End Sub
+
+' Function to check if a given string is a valid letter (A-Z)
+Function IsLetter(ByVal str As String) As Boolean
+    IsLetter = (Len(str) = 1 And str Like "[A-Z]")
+End Function
+
+' Subroutine to generate a summary report
+Sub GenerateReport(totalNames As Integer, namesWithMiddle As Integer, namesWithoutMiddle As Integer)
+    Dim wsReport As Worksheet
+    Dim reportExists As Boolean
+    Dim i As Integer
+    
+    ' Check if the report sheet already exists
+    reportExists = False
+    For i = 1 To Worksheets.Count
+        If Worksheets(i).Name = "Middle Name Report" Then
+            reportExists = True
+            Exit For
+        End If
+    Next i
+    
+    ' If the report sheet exists, delete it to refresh
+    If reportExists Then
+        Application.DisplayAlerts = False
+        Worksheets("Middle Name Report").Delete
+        Application.DisplayAlerts = True
+    End If
+    
+    ' Create a new sheet for the report
+    Set wsReport = Worksheets.Add
+    wsReport.Name = "Middle Name Report"
+    
+    ' Populate report with statistics
+    With wsReport
+        .Cells(1, 1).Value = "Middle Name Extraction Report"
+        .Cells(2, 1).Value = "Total Names Processed:"
+        .Cells(2, 2).Value = totalNames
+        .Cells(3, 1).Value = "Names with Middle Name:"
+        .Cells(3, 2).Value = namesWithMiddle
+        .Cells(4, 1).Value = "Names without Middle Name:"
+        .Cells(4, 2).Value = namesWithoutMiddle
+        
+        ' Apply formatting for readability
+        .Range("A1").Font.Bold = True
+        .Range("A1").Font.Size = 14
+        .Range("A2:A4").Font.Bold = True
+        .Columns("A:B").AutoFit
+    End With
+End Sub
+
+
+📌 Summary of Enhancements
+
+🔹 Dynamic Column Selection: User can choose any column for Full Name and Middle Name instead of hardcoding.
+🔹 Error Handling: Prevents invalid column entries and empty selections.
+🔹 Cleans Up Names:
+
+    Removes extra spaces between words.
+    Trims leading and trailing spaces.
+    Cleans non-printable characters from names.
+    🔹 Handles Special Cases:
+    If only one name exists, it marks "No Middle Name".
+    If there are only two names (First & Last), it marks "No Middle Name".
+    🔹 Generates a Summary Report:
+    Creates a new sheet named "Middle Name Report".
+    Displays Total Names Processed.
+    Shows Count of Names with & without a Middle Name.
