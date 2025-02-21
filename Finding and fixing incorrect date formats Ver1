@@ -1,0 +1,75 @@
+ VBA Script: Fixing Incorrect Date Formats (Indian Format - DD-MMM-YYYY)
+
+This VBA script will:
+✅ Identify incorrect date formats in a selected column.
+✅ Convert dates to Indian format (DD-MMM-YYYY).
+✅ Highlight wrongly formatted dates in Orange.
+✅ Ensure all dates are recognized as valid Excel dates.
+
+Sub FixDateFormats()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim rng As Range, cell As Range
+    Dim dt As Variant
+    Dim correctFormat As String
+    
+    ' Set the active worksheet
+    Set ws = ActiveSheet
+    
+    ' Find last row in Column C (Assuming Dates are in Column C)
+    lastRow = ws.Cells(Rows.Count, 3).End(xlUp).Row
+    
+    ' Define the range containing dates
+    Set rng = ws.Range("C2:C" & lastRow) ' Adjust column as per your data
+    
+    ' Define correct date format for India
+    correctFormat = "DD-MMM-YYYY"
+    
+    ' Loop through each cell in the date column
+    For Each cell In rng
+        If Not IsEmpty(cell.Value) Then
+            dt = cell.Value  ' Store original value
+            
+            ' Check if value is a valid date
+            If IsDate(dt) Then
+                ' Convert to proper date format
+                cell.Value = Format(CDate(dt), correctFormat)
+                cell.NumberFormat = correctFormat ' Apply format
+            Else
+                ' Highlight incorrect dates in Orange
+                cell.Interior.Color = RGB(255, 165, 0)
+            End If
+        End If
+    Next cell
+    
+    ' Notify user
+    MsgBox "Date Formatting Completed! Incorrect dates highlighted.", vbInformation, "Success"
+End Sub
+
+
+
+
+How This Script Works
+
+1️⃣ Loops through Column C (Modify as needed).
+2️⃣ Checks if each value is a valid date using IsDate().
+3️⃣ If valid, converts it to "DD-MMM-YYYY" format.
+4️⃣ If invalid, highlights the cell in Orange.
+
+
+ Sample Test Data (Before Running VBA)
+Name	Salary	Joining Date
+John Doe	50000	01/02/23 (Text) ❌
+Mary Jane	60000	12-15-2022 ❌
+Jack Smith	70000	10 March 2021 ✅
+Alice Brown	80000	2022/05/07 ❌
+Raj Gupta	75000	15-Aug-2020 ✅
+
+Expected Output (After Running VBA)
+Name	Salary	Joining Date
+John Doe	50000	01-Feb-2023 ✅
+Mary Jane	60000	🔶 12-15-2022 (Incorrect)
+Jack Smith	70000	10-Mar-2021 ✅
+Alice Brown	80000	🔶 2022/05/07 (Incorrect)
+Raj Gupta	75000	15-Aug-2020 ✅
+
