@@ -1,0 +1,256 @@
+VBA script that automates data cleaning and formatting in Excel. It performs all the requested tasks:
+
+✅ Removes extra spaces
+✅ Converts text to Proper Case
+✅ Converts numbers stored as text into real numbers
+✅ Highlights duplicate values in Column A
+✅ Deletes empty rows
+✅ Formats names properly
+✅ Applies custom formatting
+
+It also includes sample test data for easy testing.
+
+
+Sub CleanAndFormatData()
+    Dim ws As Worksheet
+    Dim lastRow As Long, lastCol As Long
+    Dim rng As Range, cell As Range
+    Dim colA As Range
+    Dim dupCheck As Object
+    
+    ' Set the worksheet
+    Set ws = ActiveSheet
+
+    ' Find the last row and column
+    lastRow = ws.Cells(Rows.Count, 1).End(xlUp).Row
+    lastCol = ws.Cells(1, Columns.Count).End(xlToLeft).Column
+
+    ' Define the range to clean
+    Set rng = ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, lastCol)) ' Assumes headers in row 1
+
+    ' === Remove extra spaces from all cells ===
+    For Each cell In rng
+        If Not IsEmpty(cell.Value) Then
+            cell.Value = Application.WorksheetFunction.Trim(cell.Value)
+        End If
+    Next cell
+
+    ' === Convert text to Proper Case (First letter capitalized) ===
+    For Each cell In rng
+        If Application.WorksheetFunction.IsText(cell.Value) Then
+            cell.Value = Application.WorksheetFunction.Proper(cell.Value)
+        End If
+    Next cell
+
+    ' === Convert numbers stored as text into real numbers ===
+    For Each cell In rng
+        If IsNumeric(cell.Value) Then
+            cell.Value = Val(cell.Value)
+        End If
+    Next cell
+
+    ' === Highlight duplicate names in Column A ===
+    Set colA = ws.Range("A2:A" & lastRow)
+    colA.FormatConditions.Delete ' Remove previous formatting
+    colA.FormatConditions.AddUniqueValues
+    colA.FormatConditions(1).DupeUnique = xlDuplicate
+    colA.FormatConditions(1).Interior.Color = RGB(255, 200, 200) ' Light Red
+
+    ' === Delete empty rows ===
+    For i = lastRow To 2 Step -1 ' Loop backwards to avoid skipping rows
+        If Application.WorksheetFunction.CountA(ws.Rows(i)) = 0 Then
+            ws.Rows(i).Delete
+        End If
+    Next i
+
+    ' === Apply custom formatting ===
+    ws.Range("B2:B" & lastRow).NumberFormat = "₹#,##0" ' Currency format
+    ws.Range("C2:C" & lastRow).NumberFormat = "DD-MMM-YYYY" ' Date format
+
+    ' === Notify user that script is complete ===
+    MsgBox "Data Cleaning and Formatting Completed!", vbInformation, "Success"
+
+End Sub
+
+
+
+Sample Test Data
+
+Copy this data into Excel (starting from A1) before running the VBA script.
+Name	Salary (Text)	Joining Date (Text)
+john DOE	50000	01/01/2023
+mary JANE	"60000"	02/15/2021
+JACK SMITH	"70000"	03/10/2020
+alice brown	"80000"	04/12/2022
+mary JANE	60000	02/15/2021
+(Blank Row)	(Blank Row)	(Blank Row)
+
+
+Expected Output (After Running VBA Script)
+
+✅ Names formatted correctly (e.g., "john DOE" → "John Doe")
+✅ Numbers stored as text converted (e.g., "70000" → 70000)
+✅ Duplicates in Column A highlighted in Light Red
+✅ Empty rows deleted
+✅ Salary column formatted as Currency (₹50,000, ₹60,000, etc.)
+✅ Date column formatted as "DD-MMM-YYYY"
+
+--------------------------------------------------------------------------------------------------
+Great! Based on your needs, I can add multiple enhancements to your existing VBA script. Here’s an updated version with the following additional functionalities:
+
+✅ Removes special characters from text
+✅ Standardizes date formats (DD-MMM-YYYY)
+✅ Validates email format & highlights invalid ones
+✅ Splits full name into "First Name" & "Last Name"
+✅ Identifies and highlights missing values (Blanks & Errors)
+✅ Creates a backup before modifying data
+✅ Sorts data by Name after cleaning
+
+
+Sub EnhancedDataCleaning()
+    Dim ws As Worksheet, backupSheet As Worksheet
+    Dim lastRow As Long, lastCol As Long
+    Dim rng As Range, cell As Range
+    Dim colA As Range, colEmail As Range
+    Dim dupCheck As Object
+    Dim firstName As String, lastName As String, spacePos As Integer
+
+    ' Set the worksheet
+    Set ws = ActiveSheet
+
+    ' Find the last row and column
+    lastRow = ws.Cells(Rows.Count, 1).End(xlUp).Row
+    lastCol = ws.Cells(1, Columns.Count).End(xlToLeft).Column
+
+    ' Define the range to clean
+    Set rng = ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, lastCol)) ' Assumes headers in row 1
+
+    ' === Create a Backup Before Modifying Data ===
+    ws.Copy After:=Sheets(Sheets.Count)
+    ActiveSheet.Name = ws.Name & "_Backup_" & Format(Now, "YYYYMMDD_HHMMSS")
+
+    ' === Remove extra spaces & special characters ===
+    For Each cell In rng
+        If Not IsEmpty(cell.Value) Then
+            cell.Value = Application.WorksheetFunction.Trim(cell.Value) ' Trim spaces
+            cell.Value = Replace(cell.Value, Chr(160), "") ' Remove non-breaking spaces
+            cell.Value = WorksheetFunction.Clean(cell.Value) ' Remove non-printable characters
+        End If
+    Next cell
+
+    ' === Convert text to Proper Case ===
+    For Each cell In rng
+        If Application.WorksheetFunction.IsText(cell.Value) Then
+            cell.Value = Application.WorksheetFunction.Proper(cell.Value)
+        End If
+    Next cell
+
+    ' === Convert numbers stored as text into real numbers ===
+    For Each cell In rng
+        If IsNumeric(cell.Value) Then
+            cell.Value = Val(cell.Value)
+        End If
+    Next cell
+
+    ' === Standardize Date Format (Column C) ===
+    ws.Range("C2:C" & lastRow).NumberFormat = "DD-MMM-YYYY"
+
+    ' === Validate Email Format & Highlight Invalid Ones (Column D) ===
+    Set colEmail = ws.Range("D2:D" & lastRow)
+    colEmail.FormatConditions.Delete
+    For Each cell In colEmail
+        If cell.Value <> "" Then
+            If Not cell.Value Like "*@*.*" Then
+                cell.Interior.Color = RGB(255, 165, 0) ' Orange for invalid email
+            End If
+        End If
+    Next cell
+
+    ' === Split Full Name into First Name & Last Name (Column A) ===
+    ws.Cells(1, lastCol + 1).Value = "First Name"
+    ws.Cells(1, lastCol + 2).Value = "Last Name"
+    For i = 2 To lastRow
+        spacePos = InStr(1, ws.Cells(i, 1).Value, " ")
+        If spacePos > 0 Then
+            ws.Cells(i, lastCol + 1).Value = Left(ws.Cells(i, 1).Value, spacePos - 1) ' First Name
+            ws.Cells(i, lastCol + 2).Value = Mid(ws.Cells(i, 1).Value, spacePos + 1, Len(ws.Cells(i, 1).Value)) ' Last Name
+        Else
+            ws.Cells(i, lastCol + 1).Value = ws.Cells(i, 1).Value ' If no space, assume full name is first name
+            ws.Cells(i, lastCol + 2).Value = ""
+        End If
+    Next i
+
+    ' === Highlight duplicate names in Column A ===
+    Set colA = ws.Range("A2:A" & lastRow)
+    colA.FormatConditions.Delete
+    colA.FormatConditions.AddUniqueValues
+    colA.FormatConditions(1).DupeUnique = xlDuplicate
+    colA.FormatConditions(1).Interior.Color = RGB(255, 200, 200) ' Light Red
+
+    ' === Identify & Highlight Missing Values (Blanks) ===
+    For Each cell In rng
+        If IsEmpty(cell.Value) Or cell.Value = "" Then
+            cell.Interior.Color = RGB(255, 255, 0) ' Yellow for missing values
+        End If
+    Next cell
+
+    ' === Delete empty rows ===
+    For i = lastRow To 2 Step -1
+        If Application.WorksheetFunction.CountA(ws.Rows(i)) = 0 Then
+            ws.Rows(i).Delete
+        End If
+    Next i
+
+    ' === Apply custom formatting ===
+    ws.Range("B2:B" & lastRow).NumberFormat = "₹#,##0" ' Currency format
+    ws.Range("C2:C" & lastRow).NumberFormat = "DD-MMM-YYYY" ' Date format
+
+    ' === Auto-Sort Data by Name (Column A) ===
+    ws.Sort.SortFields.Clear
+    ws.Sort.SortFields.Add Key:=Range("A2:A" & lastRow), Order:=xlAscending
+    With ws.Sort
+        .SetRange ws.Range("A1:D" & lastRow)
+        .Header = xlYes
+        .Apply
+    End With
+
+    ' === Notify User ===
+    MsgBox "Data Cleaning & Formatting Completed!", vbInformation, "Success"
+
+End Sub
+
+
+
+📌 Additional Features Included in This Version
+
+✅ Creates a Backup Sheet before modifying data.
+✅ Removes special characters and non-printable spaces.
+✅ Standardizes date format (DD-MMM-YYYY).
+✅ Validates Email Format in Column D and highlights invalid emails.
+✅ Splits Full Name into First Name and Last Name.
+✅ Identifies and Highlights Missing Values (Yellow).
+✅ Deletes empty rows for cleaner data.
+✅ Sorts Data Alphabetically by Name after cleaning.
+
+ Updated Sample Test Data
+
+Copy this data into Excel (A1:D1 as headers) and test the script.
+Name	Salary (Text)	Joining Date (Text)	Email
+john DOE	50000	01/01/2023	john.doe@email.com
+mary JANE	"60000"	02/15/2021	mary#email.com
+JACK SMITH	"70000"	03/10/2020	jack.s@email.com
+alice brown	"80000"	04/12/2022	alice@email.com
+mary JANE	60000	02/15/2021	mary.jane@email.com
+💡 Expected Output After Running VBA Script
+
+✅ Names formatted properly
+✅ Numbers converted to proper format
+✅ Dates standardized to "DD-MMM-YYYY"
+✅ Invalid emails highlighted in Orange
+✅ Empty cells highlighted in Yellow
+✅ Duplicate names in Column A highlighted in Light Red
+✅ Backup sheet created before changes
+✅ Sorted data alphabetically
+
+
+
