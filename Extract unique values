@@ -1,0 +1,156 @@
+Yes! You can sort unique values dynamically using an array formula without blank values. Here's how you can do it based on your Excel version:
+
+=SORT(UNIQUE(FILTER(H4:H100, H4:H100<>"")))
+
+🔹 How it works?
+
+    FILTER(H4:H100, H4:H100<>"") → Removes blanks.
+    UNIQUE(...) → Extracts only unique values.
+    SORT(...) → Sorts the results in ascending order.
+
+✅ Solution 2: Using Array Formula (For Older Excel Versions)
+
+If you have an older Excel version (2016, 2013, 2010), try this array formula:
+
+=IFERROR(INDEX($H$4:$H$100, MATCH(0, COUNTIF($J$3:J3, $H$4:$H$100) + IF($H$4:$H$100="", 1, 0), 0)), "")
+
+📌 Step-by-Step Instructions
+
+    Select cell J4 (or another empty column).
+    Copy the formula above.
+    Press Ctrl + Shift + Enter (NOT just Enter) to apply as an array formula.
+    Drag the formula down to extract more unique values.
+
+✅ Explanation of Formula
+
+    COUNTIF($J$3:J3, $H$4:$H$100) → Ensures only unique values are extracted.
+    IF($H$4:$H$100="", 1, 0) → Excludes blank values from results.
+    INDEX($H$4:$H$100, MATCH(0, ...)) → Finds the next unique value.
+    IFERROR(..., "") → Prevents errors if no more unique values exist.
+
+Why Was the Formula Not Working Before?
+
+    You didn't press Ctrl + Shift + Enter (older Excel requires it for array formulas).
+    Formula might not have been dragged down to show results.
+    Blanks were not excluded properly (fixed in the new version above).
+
+Let me know if it works now! 🚀
+
+✅ Solution 3: Using Helper Column (Older Versions)
+
+    Use this formula in a helper column (Column I):
+
+=IF(COUNTIF($H$4:H4, H4)=1, H4, "")
+
+
+(This extracts unique values while keeping the order.)
+
+Then, sort using:
+
+=SMALL(IF($I$4:$I$100<>"", ROW($I$4:$I$100)), ROW(A1))
+
+(Use Ctrl + Shift + Enter for array formulas.)
+
+Which Solution Should You Use?
+
+    Excel 365 / 2019 → SORT(UNIQUE(FILTER(...))) is best.
+    Older Excel versions → Use array formula with INDEX and MATCH.
+    If formulas are complex, use a helper column and sort manually.
+
+
+
+📌 What This VBA Code Does?
+
+✅ Asks the user to select the input range (containing the values to be made unique & sorted).
+✅ Asks the user to select the output range (where the unique sorted values will be placed).
+✅ Extracts unique values dynamically and removes any duplicates.
+✅ Sorts the unique values in ascending order.
+✅ Handles errors gracefully (e.g., user cancels selection, invalid range, etc.).
+✅ Notifies the user when the operation is completed.
+
+
+Sub Extract_Unique_And_Sort()
+    ' Declare variables
+    Dim ws As Worksheet
+    Dim rngInput As Range
+    Dim rngOutput As Range
+    Dim dict As Object
+    Dim cell As Range
+    Dim arr() As Variant
+    Dim i As Long, j As Long, temp As Variant
+
+    ' Set the active worksheet
+    Set ws = ActiveSheet
+
+    ' Ask user to select the input range (source data)
+    On Error Resume Next
+    Set rngInput = Application.InputBox("Select the range containing values to extract unique & sort:", Type:=8)
+    If rngInput Is Nothing Then
+        MsgBox "Operation Cancelled!", vbExclamation, "Cancelled"
+        Exit Sub
+    End If
+    On Error GoTo 0
+
+    ' Ask user to select the output range (where unique sorted values will be placed)
+    On Error Resume Next
+    Set rngOutput = Application.InputBox("Select the first cell of the output range:", Type:=8)
+    If rngOutput Is Nothing Then
+        MsgBox "Operation Cancelled!", vbExclamation, "Cancelled"
+        Exit Sub
+    End If
+    On Error GoTo 0
+
+    ' Create a dictionary object to store unique values
+    Set dict = CreateObject("Scripting.Dictionary")
+
+    ' Loop through each cell in the selected input range
+    For Each cell In rngInput
+        If Not dict.exists(Trim(cell.Value)) And Trim(cell.Value) <> "" Then
+            dict.Add Trim(cell.Value), Nothing ' Add unique non-empty values
+        End If
+    Next cell
+
+    ' If dictionary is empty, exit
+    If dict.Count = 0 Then
+        MsgBox "No valid unique values found!", vbExclamation, "No Data"
+        Exit Sub
+    End If
+
+    ' Convert dictionary keys (unique values) to an array
+    arr = dict.keys
+
+    ' Sort the array in ascending order using Bubble Sort
+    For i = LBound(arr) To UBound(arr) - 1
+        For j = i + 1 To UBound(arr)
+            If arr(i) > arr(j) Then
+                temp = arr(i)
+                arr(i) = arr(j)
+                arr(j) = temp
+            End If
+        Next j
+    Next i
+
+    ' Output the sorted unique values to the selected output range
+    For i = LBound(arr) To UBound(arr)
+        rngOutput.Offset(i, 0).Value = arr(i)
+    Next i
+
+    ' Notify user that the operation is complete
+    MsgBox "Unique values extracted and sorted successfully!", vbInformation, "Task Completed"
+End Sub
+
+
+
+📌 How to Use This VBA Code?
+
+    Open Excel and Press ALT + F11 to open the VBA Editor.
+    Insert a New Module (Insert > Module).
+    Copy & Paste the VBA code into the module.
+    Run the Macro (Extract_Unique_And_Sort) from the Macro List (ALT + F8).
+    Follow the prompts to select:
+        The input range containing raw data.
+        The output cell where sorted unique values should be placed.
+    Check the output – sorted unique values will appear in the selected column.
+
+
+
