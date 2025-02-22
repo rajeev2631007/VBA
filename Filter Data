@@ -1,0 +1,256 @@
+Since you're using an older version of Excel, dynamic array formulas like FILTER() won't be available. Instead, you can use helper columns with formulas to filter data.
+📌 Method: Using INDEX & SMALL for Filtering
+
+This method allows filtering data based on a specific value entered in a cell.
+🔹 Steps to Follow:
+
+    Enter your data (e.g., in A2:A100).
+    Enter the filter criteria in a separate cell (e.g., D1).
+    Use a formula to extract matching values dynamically.
+
+📌 Formula to Filter Data
+
+Paste this formula into the first row where you want the filtered result (e.g., E2) and drag it down:
+
+=IFERROR(INDEX(A:A, SMALL(IF($A$2:$A$100=$D$1, ROW($A$2:$A$100)), ROW(1:1))), "")
+
+
+💡 Explanation
+
+    $A$2:$A$100 → The range containing the full dataset.
+    $D$1 → The cell where the filter value is entered.
+    ROW($A$2:$A$100) → Finds matching rows.
+    SMALL(..., ROW(1:1)) → Extracts results in order.
+    INDEX(A:A, ...) → Returns the filtered value.
+    IFERROR(..., "") → Avoids errors if no match is found.
+
+📌 How to Use
+
+    Enter your data in Column A (e.g., products, names, etc.).
+    In D1, type the value you want to filter.
+    Apply the formula in E2 and drag it down.
+
+📌 Alternative: Using Advanced Filter (Manual)
+
+If you prefer a built-in method, try:
+
+    Select your data range (A1:A100).
+    Go to Data > Advanced Filter.
+    Choose Filter the list in place.
+    Enter the criteria range (e.g., $D$1).
+    Click OK.
+
+
+ VBA Macro for Filtering Data Based on Cell Value
+
+This VBA script automates filtering based on a user-defined filter value. It: ✅ Asks the user for the column containing data to filter.
+✅ Asks for the filter criteria cell (where the user enters the value).
+✅ Asks for the output location (where the filtered results will be placed).
+✅ Filters data dynamically and copies matching values.
+✅ Handles errors (e.g., if no matching data is found).
+
+Sub Filter_Data_Based_On_Cell_Value()
+    ' Declare variables
+    Dim ws As Worksheet
+    Dim rngData As Range, rngCriteria As Range, rngOutput As Range
+    Dim cell As Range, outputRow As Long
+    
+    ' Set the active worksheet
+    Set ws = ActiveSheet
+    
+    ' Ask the user to select the data range
+    On Error Resume Next
+    Set rngData = Application.InputBox("Select the column range containing the data to filter:", Type:=8)
+    If rngData Is Nothing Then
+        MsgBox "Operation Cancelled!", vbExclamation, "Cancelled"
+        Exit Sub
+    End If
+    On Error GoTo 0
+
+    ' Ask the user to select the filter criteria cell
+    On Error Resume Next
+    Set rngCriteria = Application.InputBox("Select the cell containing the filter value:", Type:=8)
+    If rngCriteria Is Nothing Then
+        MsgBox "Operation Cancelled!", vbExclamation, "Cancelled"
+        Exit Sub
+    End If
+    On Error GoTo 0
+
+    ' Ask the user to select the output location (where the filtered results will be placed)
+    On Error Resume Next
+    Set rngOutput = Application.InputBox("Select the first cell for the output:", Type:=8)
+    If rngOutput Is Nothing Then
+        MsgBox "Operation Cancelled!", vbExclamation, "Cancelled"
+        Exit Sub
+    End If
+    On Error GoTo 0
+
+    ' Clear previous output
+    rngOutput.Resize(1000, 1).Clear
+
+    ' Initialize output row
+    outputRow = rngOutput.Row
+
+    ' Loop through the data range and filter matching values
+    For Each cell In rngData
+        If cell.Value = rngCriteria.Value Then
+            ws.Cells(outputRow, rngOutput.Column).Value = cell.Value
+            outputRow = outputRow + 1
+        End If
+    Next cell
+
+    ' Notify user if no matches found
+    If outputRow = rngOutput.Row Then
+        MsgBox "No matching values found!", vbExclamation, "No Matches"
+    Else
+        MsgBox "Filtering completed successfully!", vbInformation, "Task Completed"
+    End If
+End Sub
+
+
+📌 How to Use This VBA Code
+
+    Open Excel and press ALT + F11 to open the VBA Editor.
+    Insert a new module (Insert > Module).
+    Copy & Paste the VBA code.
+    Run the macro Filter_Data_Based_On_Cell_Value from ALT + F8.
+    Follow the prompts:
+        Select the data range (e.g., A2:A100).
+        Select the filter criteria cell (e.g., D1).
+        Select the output cell (where results should appear).
+
+📌 How This Code Works
+
+    User selects the data column where filtering should happen.
+    User selects a criteria cell where they enter the filter value.
+    User selects the output cell where the filtered results will be pasted.
+    The script loops through the data, matches the filter value, and copies matching results.
+    If no matches are found, it displays a message.
+
+✅ Possible Enhancements
+
+🔹 Sort the output values automatically after filtering.
+🔹 Allow multiple criteria (e.g., filter by multiple values).
+🔹 Allow filtering across multiple columns instead of just one.
+
+
+Here’s an improved VBA script that adds:
+✅ Sorting the output values automatically after filtering.
+✅ Allowing multiple criteria (user can enter multiple filter values separated by commas).
+✅ Allowing filtering across multiple columns instead of just one.
+
+Sub Advanced_Filter_Data()
+    ' Declare variables
+    Dim ws As Worksheet
+    Dim rngData As Range, rngCriteria As Range, rngOutput As Range
+    Dim cell As Range, outputRow As Long
+    Dim filterValues As Variant, filterItem As Variant
+    Dim matchFound As Boolean
+    Dim lastRow As Long, lastCol As Long
+    
+    ' Set active worksheet
+    Set ws = ActiveSheet
+    
+    ' Ask the user to select the data range (multi-column support)
+    On Error Resume Next
+    Set rngData = Application.InputBox("Select the range containing data to filter (Multiple Columns Allowed):", Type:=8)
+    If rngData Is Nothing Then
+        MsgBox "Operation Cancelled!", vbExclamation, "Cancelled"
+        Exit Sub
+    End If
+    On Error GoTo 0
+    
+    ' Ask the user to select the filter criteria cell
+    On Error Resume Next
+    Set rngCriteria = Application.InputBox("Select the cell containing filter values (Comma-Separated for Multiple Values):", Type:=8)
+    If rngCriteria Is Nothing Then
+        MsgBox "Operation Cancelled!", vbExclamation, "Cancelled"
+        Exit Sub
+    End If
+    On Error GoTo 0
+    
+    ' Ask the user to select the output location (first cell for results)
+    On Error Resume Next
+    Set rngOutput = Application.InputBox("Select the first cell for the output:", Type:=8)
+    If rngOutput Is Nothing Then
+        MsgBox "Operation Cancelled!", vbExclamation, "Cancelled"
+        Exit Sub
+    End If
+    On Error GoTo 0
+    
+    ' Convert filter values into an array (supporting multiple criteria)
+    filterValues = Split(rngCriteria.Value, ",")
+    
+    ' Clear previous output
+    rngOutput.Resize(1000, rngData.Columns.Count).Clear
+    
+    ' Initialize output row
+    outputRow = rngOutput.Row
+    
+    ' Loop through each row in the selected data range
+    For Each cell In rngData.Columns(1).Cells
+        ' Skip empty cells
+        If cell.Value <> "" Then
+            matchFound = False
+            
+            ' Check if the cell value matches any of the filter criteria
+            For Each filterItem In filterValues
+                If Trim(LCase(cell.Value)) = Trim(LCase(filterItem)) Then
+                    matchFound = True
+                    Exit For
+                End If
+            Next filterItem
+            
+            ' If match is found, copy the entire row to the output
+            If matchFound Then
+                ws.Rows(cell.Row).Copy
+                ws.Cells(outputRow, rngOutput.Column).PasteSpecial Paste:=xlPasteValues
+                outputRow = outputRow + 1
+            End If
+        End If
+    Next cell
+    
+    ' If no matches found, show a message
+    If outputRow = rngOutput.Row Then
+        MsgBox "No matching values found!", vbExclamation, "No Matches"
+        Exit Sub
+    End If
+    
+    ' Find the last row of the filtered output
+    lastRow = ws.Cells(Rows.Count, rngOutput.Column).End(xlUp).Row
+    lastCol = rngData.Columns.Count + rngOutput.Column - 1
+    
+    ' Sort the filtered results in ascending order (based on the first column of output)
+    ws.Sort.SortFields.Clear
+    ws.Sort.SortFields.Add2 Key:=ws.Range(ws.Cells(rngOutput.Row, rngOutput.Column), ws.Cells(lastRow, rngOutput.Column)), _
+                            SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+                            
+    With ws.Sort
+        .SetRange ws.Range(ws.Cells(rngOutput.Row, rngOutput.Column), ws.Cells(lastRow, lastCol))
+        .Header = xlNo
+        .MatchCase = False
+        .Apply
+    End With
+    
+    ' Notify the user
+    MsgBox "Filtering and sorting completed successfully!", vbInformation, "Task Completed"
+End Sub
+
+
+📌 How This Code Works
+
+    User selects the data range (now supports multiple columns).
+    User enters filter values (multiple values allowed, separated by commas).
+    User selects an output location (where results will be pasted).
+    The script loops through the data, checks for matches, and copies the entire row when a match is found.
+    The filtered results are sorted automatically in ascending order.
+    A message box confirms completion or alerts if no matches were found.
+
+📌 Key Enhancements
+
+✅ Multi-column support (copies the entire row instead of just one column).
+✅ Multiple criteria support (user can enter multiple values separated by commas).
+✅ Sorting (results are sorted automatically in ascending order).
+✅ Error handling (alerts if no matches are found or if the user cancels the process).
+
+Would you like any further improvements? 🚀
